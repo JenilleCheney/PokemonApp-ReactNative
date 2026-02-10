@@ -5,10 +5,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import PokemonCard from '../components/PokemonCard';
 import DetailsModal from './DetailsModal';
 import { fetchPokemonsByIds } from '../api/pokemonApi';
+import { useTheme } from '../hooks/useTheme';
 
 const FAVORITES_STORAGE_KEY = '@pokemon_favorites';
 
 export default function FavoritesScreen() {
+  const { theme } = useTheme();
   const [favorites, setFavorites] = useState([]);
   const [favoritePokemon, setFavoritePokemon] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,24 +85,24 @@ export default function FavoritesScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text style={styles.loadingText}>Loading Favorites...</Text>
+      <View style={[styles.centerContainer, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={[styles.loadingText, { color: theme.text }]}>Loading Favorites...</Text>
       </View>
     );
   }
 
   if (favoritePokemon.length === 0) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.emptyText}>No favorites yet!</Text>
-        <Text style={styles.emptySubtext}>Tap the star on any Pokemon to add them here.</Text>
+      <View style={[styles.centerContainer, { backgroundColor: theme.background }]}>
+        <Text style={[styles.emptyText, { color: theme.text }]}>No favorites yet!</Text>
+        <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>Tap the star on any Pokemon to add them here.</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <FlatList
         data={favoritePokemon}
         keyExtractor={(item) => item.id.toString()}

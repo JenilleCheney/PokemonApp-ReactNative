@@ -1,19 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, FlatList, Text, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PokemonCard from '../components/PokemonCard';
 import SearchBar from '../components/SearchBar';
 import DetailsModal from './DetailsModal';
-import { fetchPokemonList } from '../api/pokemonApi';
+import { fetchPokemonList, searchPokemon } from '../api/pokemonApi';
+import { useTheme } from '../hooks/useTheme';
 
 const FAVORITES_STORAGE_KEY = '@pokemon_favorites';
 
 export default function HomeScreen() {
+  const { theme } = useTheme();
+  const { width } = useWindowDimensions();
   const [pokemon, setPokemon] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   const [selectedPokemon, setSelectedPokemon] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [favorites, setFavorites] = useState([]);
@@ -31,6 +36,51 @@ export default function HomeScreen() {
   useEffect(() => {
     saveFavorites(favorites);
   }, [favorites]);
+
+  // Search effect with debouncing
+  useEffect(() => {
+    const delaySearch = setTimeout(() => {
+      if (searchQuery.trim().length > 0) {
+        performSearch();
+      } else {
+        setSearchResults([]);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(delaySearch);
+  }, [searchQuery]);
+
+  const performSearch = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setSearching(true);
+    try {
+      // First check loaded Pokemon
+      const localResults = pokemon.filter((p) => {
+        const query = searchQuery.toLowerCase();
+        const matchesName = p.name.toLowerCase().includes(query);
+        const matchesType = p.types.some(t => t.type.name.toLowerCase().includes(query));
+        return matchesName || matchesType;
+      });
+
+      // If we have local results, show them
+      if (localResults.length > 0) {
+        setSearchResults(localResults);
+      } else {
+        // Otherwise search the API
+        const apiResults = await searchPokemon(searchQuery);
+        setSearchResults(apiResults);
+      }
+    } catch (err) {
+      console.error('Search error:', err);
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
 
   const loadPokemon = async (loadMore = false) => {
     try {
@@ -74,7 +124,7 @@ export default function HomeScreen() {
   const loadFavorites = async () => {
     try {
       const storedFavorites = await AsyncStorage.getItem(FAVORITES_STORAGE_KEY);
-      if (storedFavorites !== null) {
+      if (storedFavorites) {
         setFavorites(JSON.parse(storedFavorites));
       }
     } catch (error) {
@@ -119,36 +169,43 @@ export default function HomeScreen() {
     setSelectedPokemon(null);
   };
 
-  const filteredPokemon = pokemon.filter((p) => {
-    const query = searchQuery.toLowerCase();
-    const matchesName = p.name.toLowerCase().includes(query);
-    const matchesType = p.types.some(t => t.type.name.toLowerCase().includes(query));
-    return matchesName || matchesType;
-  });
+  const displayedPokemon = searchQuery.trim().length > 0 ? searchResults : pokemon;
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text style={styles.loadingText}>Loading Pokemon...</Text>
+      <View style={[styles.centerContainer, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={[styles.loadingText, { color: theme.text }]}>Loading Pokemon...</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={[styles.centerContainer, { backgroundColor: theme.background }]}>
         <Text style={styles.errorText}>Error: {error}</Text>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, padding: 12 }}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <SearchBar value={searchQuery} onChange={setSearchQuery} />
+      {searching && (
+        <View style={styles.searchingContainer}>
+          <ActivityIndicator size="small" color={theme.primary} />
+          <Text style={[styles.searchingText, { color: theme.textSecondary }]}>Searching...</Text>
+        </View>
+      )}
+      {searchQuery.trim().length > 0 && !searching && displayedPokemon.length === 0 && (
+        <View style={styles.searchingContainer}>
+          <Text style={[styles.searchingText, { color: theme.textSecondary }]}>No Pokemon found</Text>
+        </View>
+      )}
       <FlatList
-        data={filteredPokemon}
+        data={displayedPokemon}
         keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={width >= 768 ? styles.listContentCentered : styles.listContent}
         renderItem={({ item }) => (
           <PokemonCard 
             item={item} 
@@ -157,17 +214,17 @@ export default function HomeScreen() {
             isFavorite={isFavorite(item.id)}
           />
         )}
-        onEndReached={handleLoadMore}
+        onEndReached={searchQuery.trim().length === 0 ? handleLoadMore : null}
         onEndReachedThreshold={0.5}
         ListFooterComponent={() => 
-          loadingMore ? (
+          loadingMore && searchQuery.trim().length === 0 ? (
             <View style={styles.footerLoader}>
-              <ActivityIndicator size="small" color="#0000ff" />
-              <Text style={styles.footerText}>Loading more Pokemon...</Text>
+              <ActivityIndicator size="small" color={theme.primary} />
+              <Text style={[styles.footerText, { color: theme.textSecondary }]}>Loading more Pokemon...</Text>
             </View>
-          ) : !hasMore && pokemon.length > 0 ? (
+          ) : !hasMore && pokemon.length > 0 && searchQuery.trim().length === 0 ? (
             <View style={styles.footerLoader}>
-              <Text style={styles.footerText}>You've reached the end!</Text>
+              <Text style={[styles.footerText, { color: theme.textSecondary }]}>You've reached the end!</Text>
             </View>
           ) : null
         }
@@ -182,6 +239,18 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 12,
+  },
+  listContent: {
+    width: '100%',
+  },
+  listContentCentered: {
+    maxWidth: 800,
+    width: '100%',
+    alignSelf: 'center',
+  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -205,5 +274,15 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
     color: '#666',
+  },
+  searchingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    gap: 8,
+  },
+  searchingText: {
+    fontSize: 14,
   },
 });

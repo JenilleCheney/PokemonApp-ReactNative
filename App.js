@@ -1,19 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { ThemeProvider } from './hooks/useTheme';
 import MainStackNavigator from './navigation/MainStackNavigator';
 
 export default function App() {
   console.log('App is rendering');
   return (
-    <View style={styles.container}>
+    <ThemeProvider>
       <MainStackNavigator />
-    </View>
+    </ThemeProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-});
