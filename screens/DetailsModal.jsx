@@ -49,10 +49,6 @@ export default function DetailsModal({ visible, pokemon, onClose }) {
             <Text style={styles.label}>Abilities: <Text style={styles.value}>{pokemon.abilities.map(a => a.ability.name).join(', ')}</Text></Text>
             <Text style={styles.label}>Height: <Text style={styles.value}>{pokemon.height}</Text></Text>
             <Text style={styles.label}>Weight: <Text style={styles.value}>{pokemon.weight}</Text></Text>
-
-            <TouchableOpacity style={styles.close} onPress={onClose}>
-              <Text style={styles.closeText}>Close</Text>
-            </TouchableOpacity>
           </ScrollView>
         </View>
       </View>
@@ -70,6 +66,4 @@ const styles = StyleSheet.create({
   description: { fontSize: 14, fontStyle: 'italic', marginBottom: 15, textAlign: 'center', color: '#666' },
   label: { fontSize: 16, fontWeight: '600', marginTop: 8 },
   value: { fontWeight: 'normal' },
-  close: { marginTop: 20, backgroundColor: '#ef4444', padding: 12, borderRadius: 8, alignItems: 'center' },
-  closeText: { color: '#fff', fontSize: 16, fontWeight: '600' }
 });

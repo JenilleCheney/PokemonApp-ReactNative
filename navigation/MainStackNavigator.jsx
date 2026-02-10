@@ -1,6 +1,8 @@
 import React from 'react';
+import { TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { MaterialIcons } from '@expo/vector-icons';
 import HomeScreen from '../screens/HomeScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
 import DetailsModal from '../screens/DetailsModal';
@@ -15,12 +17,23 @@ export default function MainStackNavigator() {
         <Stack.Screen 
           name="Home" 
           component={HomeScreen}
-          options={{ title: 'Personal Pokedex', headerTitleAlign: 'center' }}
+          options={({ navigation }) => ({
+            title: 'Personal Pokedex',
+            headerTitleAlign: 'center',
+            headerRight: () => (
+              <TouchableOpacity 
+                onPress={() => navigation.navigate('Favorites')}
+                style={{ marginRight: 10 }}
+              >
+                <MaterialIcons name="favorite" size={24} color="#ef4444" />
+              </TouchableOpacity>
+            ),
+          })}
         />
         <Stack.Screen 
           name="Favorites" 
           component={FavoritesScreen}
-          options={{ title: 'Favorites' }}
+          options={{ title: 'Favorites', headerTitleAlign: 'center' }}
         />
         <Stack.Screen 
           name="Details" 
