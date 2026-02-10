@@ -15,7 +15,7 @@ export default function MainStackNavigator() {
         <Stack.Screen 
           name="Home" 
           component={HomeScreen}
-          options={{ title: 'Pokemon' }}
+          options={{ title: 'Personal Pokedex', headerTitleAlign: 'center' }}
         />
         <Stack.Screen 
           name="Favorites" 

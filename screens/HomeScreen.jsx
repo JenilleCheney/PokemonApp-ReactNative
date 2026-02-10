@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import PokemonCard from '../components/PokemonCard';
+import SearchBar from '../components/SearchBar';
 import { fetchPokemonList } from '../api/pokemonApi';
 
 export default function HomeScreen() {
   const [pokemon, setPokemon] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadPokemon();
@@ -25,6 +27,13 @@ export default function HomeScreen() {
       setLoading(false);
     }
   };
+
+  const filteredPokemon = pokemon.filter((p) => {
+    const query = searchQuery.toLowerCase();
+    const matchesName = p.name.toLowerCase().includes(query);
+    const matchesType = p.types.some(t => t.type.name.toLowerCase().includes(query));
+    return matchesName || matchesType;
+  });
 
   if (loading) {
     return (
@@ -45,8 +54,9 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1, padding: 12 }}>
+      <SearchBar value={searchQuery} onChange={setSearchQuery} />
       <FlatList
-        data={pokemon}
+        data={filteredPokemon}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <PokemonCard item={item} onPress={() => {}} />
